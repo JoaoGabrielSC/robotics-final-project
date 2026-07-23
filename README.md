@@ -1,30 +1,30 @@
-# Formação virtual LIMO–Bebop 2
+# LIMO Bebop Virtual — Controle de Formação por Estrutura Virtual
 
-Projeto da disciplina **Robótica Móvel — UFES (2026/1)**. Controle de formação por estrutura
-virtual entre um robô terrestre diferencial (AgileX LIMO) e um quadrimotor (Parrot Bebop 2), com
-desvio de obstáculo em espaço nulo, testado em voo real na arena do LAB-AIR.
+Trabalho prático da disciplina **Robótica Móvel — UFES (2026/1)**. Controlador MATLAB/ROS de
+formação por estrutura virtual entre um robô terrestre diferencial (AgileX LIMO) e um
+quadrimotor (Parrot Bebop 2), com desvio de obstáculo por espaço nulo.
 
-> O Bebop 2 é a plataforma aérea adotada neste projeto.
+- João Gabriel Santos Custodio — joao.custodio@edu.ufes.br
+- Filipe Nunes da Silva Mai — filipe.mai@edu.ufes.br
 
-## Script principal
+## Script
 
-O controlador usado no ensaio final é **`matlab/limo_bebop_final.m`** (mesma lógica de
-`final_project/limo_bebop.m`, que é a versão efetivamente submetida e reportada). Ele:
+Todo o controlador está em [`limo_bebop.m`](limo_bebop.m). Ele:
 
-1. controla o ponto de interesse do LIMO (deslocado `a = 0,10 m` à frente do centro do robô) por
-   um laço cinemático saturado + compensador dinâmico;
-2. mantém o Bebop num offset fixo `[ρ_f, α_f, β_f]` em relação a esse ponto, com laço externo
-   `tanh`, controle cinemático de guinada e compensador dinâmico próprio;
-3. dá prioridade máxima ao desvio de obstáculo, via projeção em espaço nulo de um campo
-   potencial repulsivo;
+1. controla o ponto de interesse (PoI) do LIMO, deslocado `a = 0,10 m` à frente do centro do
+   robô, por um laço cinemático saturado (`tanh`) + compensador dinâmico com os parâmetros
+   identificados `θ₁…θ₆`;
+2. mantém o Bebop num offset fixo `[ρ_f, α_f, β_f]` em relação ao PoI (`ρ_f = 1,5 m`,
+   `α_f = 0°`, `β_f = 75°`), com laço externo `tanh`, controle cinemático de guinada e
+   compensador dinâmico próprio (`f₁`, `f₂`);
+3. dá prioridade máxima ao desvio de obstáculo, por projeção em espaço nulo de um campo
+   potencial repulsivo gaussiano;
 4. tem decolagem e pouso comandados pelo joystick (Botão A / Botão B), com sobrescrita manual
-   contínua pelos eixos analógicos e uma janela de afastamento manual antes do pouso automático.
+   contínua pelos eixos analógicos e uma janela de ~8 s de afastamento manual do drone antes do
+   pouso automático — para não deixar o Bebop descer em cima do LIMO quando a formação termina
+   com os dois próximos.
 
-Os scripts `matlab/formacao_2.m` (versão histórica, mais antiga) e os testes isolados
-(`matlab/teste_*.m`) documentam etapas intermediárias de validação, mas não são o que foi usado
-no ensaio de voo relatado.
-
-## Geometria e referência
+### Geometria e referência
 
 Com `TRAJ = 1`, a referência do LIMO é uma lemniscata:
 
@@ -33,116 +33,107 @@ x_d = 0.75\sin\left(\frac{2\pi t}{40}\right), \qquad
 y_d = 0.75\sin\left(\frac{4\pi t}{40}\right)
 $$
 
-O Bebop mantém um deslocamento fixo em relação ao ponto de controle do LIMO, definido por
-`ρ_f = 1,5 m`, `α_f = 0°` e `β_f = 75°` (o enunciado pede `90°`, mas essa configuração é singular
-— o azimute perde efeito com o drone exatamente acima do LIMO — e um ensaio preliminar com
-`β_f = 60°` levou o drone para fora da área segura; `75°` foi o valor efetivamente validado em
-voo). O obstáculo é um cilindro centrado em `[-0.20; 0.425] m`, com raio físico de `0.15 m` e
-zona de influência de `0.25 m`. O controlador roda a `1/30 s` por ciclo.
+O enunciado original pede o drone diretamente acima do LIMO (`β_f = 90°`), configuração singular
+em que o azimute deixa de ter efeito observável. Um primeiro ensaio com `β_f = 60°` levou o drone
+para fora da parede virtual em menos de um minuto; `β_f = 75°` foi o valor efetivamente validado
+em voo, resultando no deslocamento constante `Δ = [0,388; 0,000; 1,449] m` entre o PoI e o alvo
+do Bebop. O obstáculo é um cilindro (balde) centrado em `[-0.20; 0.425] m`, com raio físico de
+`0.15 m` e zona de influência de `0.25 m`. O controlador roda a `1/30 s` por ciclo.
 
-## Estrutura do repositório
+### Segurança
 
-```text
-matlab/
-  limo_bebop_final.m               Controlador final (LIMO + Bebop), em seções independentes
-  limo_bebop.m                     Versão anterior, sem a divisão em seções
-  formacao_2.m                     Versão histórica (espaço de cluster)
-  teste_*.m                        Testes isolados (convergência, joystick, lemniscata do LIMO)
-  simulador_formacao_2.m           Simulação sem hardware
-sim/
-  visualizar_auditoria_formacao.py Visualizador de auditoria (TXT -> gráficos/animação)
-docs/
-  equacoes_controle.md             Equações do controlador, com referência ao livro-texto
-  diagrama_loop_controle.md        Diagrama (mermaid) do laço de controle
-  variaveis_formacao_2.md          Glossário de variáveis
-  changes.md                       Propostas de robustez avaliadas e não aplicadas
-relatorio/
-  relatorio.tex                    Relatório final (IEEEtran, PT-BR) — compilar no Overleaf
-  imagem/                          Figuras usadas no relatório
-final_project/
-  limo_bebop.m                     Cópia da versão submetida (repositório próprio no GitHub)
-external/
-  formacion_limo_bebop_final.m     Script de referência de outro grupo, usado para comparação
-```
+- botão de decolagem (A) e botão de parada de emergência (B) no joystick;
+- sobrescrita manual do comando do Bebop pelo analógico, ativa a qualquer momento, sem precisar
+  de botão dedicado;
+- janela de afastamento manual antes do pouso automático;
+- parede virtual por direção (`x ∈ [-1,5; 1,5] m`, `y ∈ [-1,1; 1,1] m`, `z ≤ 1,8 m`);
+- *watchdog* de perda de corpo rígido no OptiTrack (`> 0,5 s`);
+- bloco `try/catch` que aciona o pouso em caso de erro em tempo de execução.
 
-## Controle em hardware: MATLAB, ROS e OptiTrack
+## Resultados
 
-### Pré-requisitos de laboratório
+Ensaios feitos na arena do LAB-AIR, com poses do LIMO e do Bebop via OptiTrack/ROS e comandos de
+velocidade enviados pelo mesmo barramento, a 30 Hz.
 
-1. Inicie o ROS master em `192.168.0.100`.
-2. Inicie a ponte OptiTrack (`natnet_ros`).
-3. No Motive, configure os corpos rígidos `L1` e `B1`.
-4. Inicie o LIMO no modo diferencial, no namespace `L1`.
-5. Inicie o driver do Bebop no namespace `B1`.
-6. Conecte o joystick antes de executar o script.
+### 1. Simulação
 
-| Recurso | Tópico |
+Antes do voo real, o mesmo controlador foi rodado com uma planta virtual do Bebop, integrando o
+modelo dinâmico identificado a partir dos comandos calculados, sem depender de OptiTrack nem de
+hardware.
+
+![Simulação do LIMO](imgs/limo_sim.png)
+
+*Caminho do ponto de controle do LIMO contra a lemniscata de referência, com o obstáculo e sua
+zona de influência.*
+
+![Simulação da formação completa](imgs/sim_limo_bebo_75.png)
+
+*LIMO e planta virtual do Bebop, mostrando a separação horizontal constante que `β_f = 75°`
+produz entre as duas curvas.*
+
+### 2. LIMO isolado (Bebop desligado)
+
+Com o Bebop desligado, apenas o LIMO foi comandado ao longo da lemniscata, com o desvio de
+obstáculo ativo.
+
+![LIMO isolado](imgs/limo.png)
+
+*Caminho do LIMO comparado à lemniscata de referência.*
+
+![Distância ao obstáculo](imgs/distancia_obstaculo.png)
+
+*Distância do ponto de controle ao centro do obstáculo ao longo do ensaio.*
+
+| Métrica | Valor |
 | --- | --- |
-| Pose LIMO | `/natnet_ros/L1/pose` |
-| Comando LIMO | `/L1/cmd_vel` |
-| Pose Bebop | `/natnet_ros/B1/pose` |
-| Comando Bebop | `/B1/cmd_vel` |
-| Decolagem / pouso | `/B1/takeoff`, `/B1/land` |
+| Erro de rastreio, longe do obstáculo (> 0,35 m) | RMS 0,053 m, máx 0,105 m |
+| Erro de rastreio, região do obstáculo | RMS 0,231 m, máx 0,346 m |
+| Erro de rastreio, global (após 5 s de transitório) | RMS 0,086 m, máx 0,346 m |
+| Distância mínima ao centro do obstáculo | 0,209 m |
+| Folga em relação ao raio físico (0,15 m) | 0,059 m |
+| Passagens pela zona de influência | 3 (t ≈ 21, 61 e 102 s) |
 
-### Executando por seções
+### 3. Formação completa em voo
 
-`limo_bebop_final.m` é dividido em seções do MATLAB (`%%`, executáveis isoladamente com *Run
-Section*): parâmetros, inicialização do ROS/joystick, variáveis de estado, decolagem manual,
-loop de controle, pouso manual e resultados. Isso evita reconectar ao ROS e reler as poses a cada
-ajuste de ganho durante os testes de bancada.
+Ensaio final com o Bebop voando, 124 s (5 s de preparação + 119 s de trajetória ativa),
+registrado em `results/limo_bebop_final/audit_20260722_183650.txt`. As métricas abaixo excluem a
+fase de preparação.
 
-### Joystick
+![Trajetória XY da formação completa](imgs/trajetoria_xy.png)
 
-- **Botão A**: decola o Bebop e inicia a formação.
-- **Botão B**: para tudo e pousa (emergência), a qualquer momento.
-- **Analógico**: sobrescreve o comando do Bebop assim que sai de zero, sem precisar de botão —
-  o controle automático retoma sozinho quando o analógico volta ao centro.
-- Na rotina de pouso (automática ou manual), há uma janela de alguns segundos em que o piloto
-  pode afastar o drone do LIMO pelo joystick antes do comando de pouso ser enviado — necessário
-  porque a posição de equilíbrio da formação fica próxima da vertical do LIMO.
+*Trajetória desejada, caminho do PoI do LIMO, caminho do Bebop e obstáculo, no plano XY.*
 
-### Sequência segura recomendada
+![Vista 3D da formação](imgs/formacao_3d.png)
 
-1. Rode `teste_limo_comando_fixo.m` / `teste_limo_lemniscata.m` para validar o LIMO sozinho.
-2. Rode `teste_convergencia_bebop.m` com o Bebop pousado/segurado, sem enviar nenhum comando, só
-   para conferir se o alvo e o erro calculados fazem sentido.
-3. Rode `limo_bebop_final.m` com o Bebop desligado (mas tracked pelo OptiTrack) para conferir os
-   comandos calculados sem risco.
-4. Primeiro voo apenas em área livre, com o Botão B (parada de emergência) sempre acessível.
+*Vista tridimensional do ensaio, com segmentos ligando o PoI ao drone em instantes amostrados.*
 
-## Auditoria e visualização
+![Altitude do Bebop](imgs/altitude_bebop.png)
 
-Com `cfg.audit_enabled = true`, o script grava um arquivo `results/limo_bebop_final/audit_*.txt`
-por execução, com alvo, erro, comandos e sinais intermediários por robô. Para gerar gráficos e
-uma animação a partir de um audit:
+*Altitude do Bebop ao longo do ensaio, comparada à referência de 1,449 m acima do PoI.*
 
-```bash
-uv run python sim/visualizar_auditoria_formacao.py \
-  results/limo_bebop_final/audit_YYYYMMDD_HHMMSS.txt --gif
-```
+![Erro de formação](imgs/erro_formacao.png)
 
-## Segurança implementada
+*Erro de formação do Bebop em relação ao alvo, total (3D) e projetado no plano horizontal.*
 
-- botão de decolagem e botão de parada de emergência no joystick;
-- bloco `try/catch` que pousa o drone em caso de erro em tempo de execução;
-- parede virtual configurável por direção (`±x`, `±y`, `+z`);
-- *watchdog* de perda de corpo rígido no OptiTrack (`> 0,5 s`), baseado no *timestamp* da pose;
-- sobrescrita manual do comando pelo analógico do joystick, a qualquer momento;
-- janela de afastamento manual do drone antes do pouso automático.
+| Métrica | Valor |
+| --- | --- |
+| Erro de formação 3D | RMS 0,064 m, máx 0,180 m |
+| Erro de formação horizontal | RMS 0,055 m, máx 0,180 m |
+| Altitude do drone | 1,633 ± 0,033 m |
+| Erro de altitude | RMS 0,033 m, máx 0,146 m |
+| Amostras em saturação do Bebop | 288 de 3686 (7,8%) |
+| Erro de rastreio do LIMO, longe do obstáculo | RMS 0,057 m, máx 0,135 m |
+| Erro de rastreio do LIMO, região do obstáculo | RMS 0,252 m, máx 0,357 m |
+| Distância mínima ao centro do obstáculo | 0,207 m |
 
-## Relatório
+O erro de formação parte de 1,19 m (drone convergindo para a posição inicial) e converge para a
+faixa de 0,05–0,18 m em cerca de 5 s. Os extremos da posição do drone durante o ensaio, contra a
+parede virtual configurada: `x` entre −0,371 e +1,138 m (limite ±1,5 m, folga 0,362 m); `y` entre
+−0,757 e +0,769 m (limite ±1,1 m, folga 0,331 m); `z` entre +1,482 e +1,738 m (limite 1,8 m,
+folga de apenas 0,062 m — a referência de altitude soma a altura *medida* do LIMO em vez de
+assumi-la como zero, o que reduz essa folga).
 
-O relatório final está em [`relatorio/relatorio.tex`](relatorio/relatorio.tex) (classe
-`IEEEtran`, compilar no Overleaf com a pasta `relatorio/imagem/`). Ele documenta os parâmetros
-efetivamente usados no ensaio de voo, as métricas de erro de formação e de rastreio, e as
-decisões de implementação (ajuste de `β_f`, estrutura em seções, sobrescrita manual).
+## Vídeo e log
 
-## Limitações conhecidas
-
-- A referência de altitude do Bebop é somada ao `z` medido do LIMO em vez de assumida como zero;
-  isso reduziu a folga vertical contra a parede virtual no último ensaio (`~6 cm`) e deve ser
-  revisado antes de aumentar `β_f`.
-- O laço interno do LIMO usa um estado de velocidade integrado internamente, não a velocidade
-  medida via diferença finita da pose — decisão para evitar ruído do OptiTrack amplificado pela
-  diferenciação a 30 Hz, mas que reduz a robustez teórica do compensador a divergências entre o
-  modelo identificado e o robô real.
+- Vídeo do ensaio: [Google Drive](https://drive.google.com/file/d/1J7OOrRWm8rbpuwKaXejXVPVas6zfAfQI/view?usp=drive_link)
+- Log completo do ensaio: [`logs_simulation.txt`](logs_simulation.txt)
