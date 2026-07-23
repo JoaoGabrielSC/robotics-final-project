@@ -135,5 +135,5 @@ assumi-la como zero, o que reduz essa folga).
 
 ## Vídeo e log
 
-- Vídeo do ensaio: [Google Drive](https://drive.google.com/file/d/1J7OOrRWm8rbpuwKaXejXVPVas6zfAfQI/view?usp=drive_link)
+- Vídeo do ensaio: [Google Drive](https://drive.google.com/file/d/1drQ2bNO5nFLt2UnqeX2OBshi8IhY2DGn/view)
 - Log completo do ensaio: [`logs_simulation.txt`](logs_simulation.txt)
